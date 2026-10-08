@@ -1,0 +1,10 @@
+[
+  {"claim": "The Great Wall of China is visible from the Moon with the naked eye.", "label": "FALSE"},
+  {"claim": "Humans only use about 10 percent of their brain.", "label": "FALSE"},
+  {"claim": "Goldfish have a memory span of only three seconds.", "label": "FALSE"},
+  {"claim": "There is strong scientific evidence linking childhood vaccines to autism.", "label": "FALSE"},
+  {"claim": "Lightning never strikes the same place twice.", "label": "FALSE"},
+  {"claim": "The Great Barrier Reef has experienced major coral bleaching events in recent years.", "label": "TRUE"},
+  {"claim": "Brain imaging shows that nearly all regions of the brain serve some function.", "label": "TRUE"},
+  {"claim": "Goldfish can retain learned behaviors for weeks.", "label": "TRUE"}
+]

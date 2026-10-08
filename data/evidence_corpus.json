@@ -1,0 +1,18 @@
+[
+  {"id": "E1", "text": "The Great Wall of China is not visible to the naked eye from the Moon, according to NASA astronauts and multiple space agencies; this has been confirmed by direct observation reports."},
+  {"id": "E2", "text": "The Great Wall is only about 9 meters wide on average, far too narrow to be resolved by the human eye from orbital distances, let alone from the Moon."},
+  {"id": "E3", "text": "Astronaut Chris Hadfield has stated that many human-made structures, including highways, are visible from low Earth orbit, but this is very different from being visible from the Moon."},
+  {"id": "E4", "text": "Humans typically use only about 10% of their brain at any given time is a myth; brain imaging studies show that nearly all regions of the brain have a function and are used, just not all simultaneously."},
+  {"id": "E5", "text": "The '10 percent of the brain' myth likely originated from a misinterpretation of neuroscience findings in the early 20th century and has been repeatedly debunked by neurologists."},
+  {"id": "E6", "text": "Functional MRI studies show that even simple tasks activate large, distributed networks across the brain, not just a small fraction of it."},
+  {"id": "E7", "text": "Goldfish have a memory span of at least several months, not three seconds, according to peer-reviewed studies on fish cognition and behavior."},
+  {"id": "E8", "text": "Researchers have trained goldfish to respond to specific cues and retain the learned behavior for weeks, contradicting the popular three-second memory claim."},
+  {"id": "E9", "text": "Vaccines undergo multiple phases of clinical trials before approval, and large-scale post-market surveillance systems continue to monitor for rare adverse effects."},
+  {"id": "E10", "text": "Peer-reviewed meta-analyses involving millions of participants have found no causal link between standard childhood vaccines and autism spectrum disorder."},
+  {"id": "E11", "text": "The original 1998 study claiming a vaccine-autism link was retracted by The Lancet due to data manipulation and ethical violations by the lead author."},
+  {"id": "E12", "text": "The Great Barrier Reef has experienced significant coral bleaching events in 2016, 2017, and 2020, primarily linked to rising sea temperatures."},
+  {"id": "E13", "text": "Some sections of the Great Barrier Reef have shown partial recovery in coral cover between major bleaching events, according to long-term monitoring programs."},
+  {"id": "E14", "text": "Scientists agree that repeated bleaching events reduce the reef's ability to fully recover, even when short-term recovery is observed in specific regions."},
+  {"id": "E15", "text": "Lightning can and does strike the same place multiple times; tall structures like the Empire State Building are struck by lightning dozens of times per year."},
+  {"id": "E16", "text": "Lightning rods are specifically designed on the principle that lightning preferentially strikes the same tall, conductive points repeatedly."}
+]
