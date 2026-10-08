@@ -95,7 +95,20 @@ class FaissRetriever:
                     evidence_id=self.ids[index],
                     text=self.texts[index],
                     score=float(score),
-                )
+
+                    # V2 provenance
+                    source_type="local",
+                    title="Local Evidence Corpus",
+                    url="",
+                    domain="local",
+                    published_date=None,
+
+                    # Retrieval metadata
+                    retrieval_score=float(score),
+
+                    # Will be implemented later
+                    credibility_score=0.0,
+                    )
             )
 
         return results

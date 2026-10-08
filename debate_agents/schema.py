@@ -25,6 +25,19 @@ class EvidenceSnippet:
     text: str
     score: float
 
+    # V2 provenance fields
+    source_type: str = "local"
+    title: str = ""
+    url: str = ""
+    domain: str = ""
+    published_date: str | None = None
+
+    # Raw retrieval score from the retrieval system.
+    retrieval_score: float = 0.0
+
+    # Reserved for the future source credibility layer.
+    # We will calculate this properly in a later V2 step.
+    credibility_score: float = 0.0
 
 @dataclass
 class Argument:
@@ -49,27 +62,32 @@ class JudgeVerdict:
     for_score: float
     against_score: float
 
-
 @dataclass
 class DebateResult:
     claim: str
+    claim_type: str
+
     evidence: List[EvidenceSnippet]
 
-    # Opening arguments
     for_argument: Argument
     against_argument: Argument
 
-    # Grounding for opening arguments
     for_grounding: GroundingReport
     against_grounding: GroundingReport
 
-    # Final verdict
     verdict: JudgeVerdict
 
-    # Rebuttal arguments
     for_rebuttal: Argument | None = None
     against_rebuttal: Argument | None = None
 
-    # Grounding for rebuttals
     for_rebuttal_grounding: GroundingReport | None = None
     against_rebuttal_grounding: GroundingReport | None = None
+
+    evidence_sufficient: bool = True
+    evidence_reason: str = ""
+
+    rejected_evidence: List[EvidenceSnippet] = field(
+        default_factory=list
+    )
+
+    retrieval_mode: str = "local"

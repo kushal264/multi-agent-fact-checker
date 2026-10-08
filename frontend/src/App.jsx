@@ -3,8 +3,43 @@ import "./App.css";
 
 const API_URL = "http://127.0.0.1:8000";
 
+
+function formatPercent(value) {
+  if (value === null || value === undefined) {
+    return "0%";
+  }
+
+  return `${Math.round(value * 100)}%`;
+}
+
+
+function SourceBadge({ type }) {
+  if (!type) return null;
+
+  return (
+    <span className={`source-badge ${type.toLowerCase()}`}>
+      {type}
+    </span>
+  );
+}
+
+
+function StatusBadge({ value }) {
+  if (!value) return null;
+
+  return (
+    <span className="status-badge">
+      {value}
+    </span>
+  );
+}
+
+
 function ScoreBar({ label, score }) {
-  const percentage = Math.round((score || 0) * 100);
+  const percentage = Math.max(
+    0,
+    Math.min(100, Math.round((score || 0) * 100))
+  );
 
   return (
     <div className="score-row">
@@ -23,13 +58,21 @@ function ScoreBar({ label, score }) {
   );
 }
 
-function ArgumentCard({ title, argument, grounding }) {
+
+function ArgumentCard({
+  title,
+  argument,
+  grounding,
+}) {
   if (!argument) return null;
 
   return (
     <div className="argument-card">
       <div className="card-header">
-        <h3>{title}</h3>
+        <div>
+          <span className="eyebrow">AGENT</span>
+          <h3>{title}</h3>
+        </div>
 
         <span className="stance-badge">
           {argument.stance}
@@ -41,12 +84,17 @@ function ArgumentCard({ title, argument, grounding }) {
       </p>
 
       <div className="citation-section">
-        <span className="section-label">Citations</span>
+        <span className="section-label">
+          Citations
+        </span>
 
         <div className="citation-list">
           {argument.cited_evidence_ids?.length > 0 ? (
             argument.cited_evidence_ids.map((id) => (
-              <span className="citation-chip" key={id}>
+              <span
+                className="citation-chip"
+                key={id}
+              >
                 {id}
               </span>
             ))
@@ -61,26 +109,25 @@ function ArgumentCard({ title, argument, grounding }) {
       {grounding && (
         <div className="grounding-box">
           <div>
-            <span>Valid citations</span>
+            <span>Valid</span>
             <strong>
               {grounding.valid_citation_count}
             </strong>
           </div>
 
           <div>
-            <span>Invalid citations</span>
+            <span>Invalid</span>
             <strong>
               {grounding.invalid_citation_count}
             </strong>
           </div>
 
           <div>
-            <span>Grounding score</span>
+            <span>Grounding</span>
             <strong>
-              {Math.round(
-                grounding.grounding_score * 100
+              {formatPercent(
+                grounding.grounding_score
               )}
-              %
             </strong>
           </div>
         </div>
@@ -89,13 +136,24 @@ function ArgumentCard({ title, argument, grounding }) {
   );
 }
 
-function RebuttalCard({ title, argument, grounding }) {
+
+function RebuttalCard({
+  title,
+  argument,
+  grounding,
+}) {
   if (!argument) return null;
 
   return (
     <div className="rebuttal-card">
-      <div className="rebuttal-title">
-        {title}
+      <div className="rebuttal-header">
+        <span className="rebuttal-title">
+          {title}
+        </span>
+
+        <span className="stance-badge">
+          {argument.stance}
+        </span>
       </div>
 
       <p>{argument.text}</p>
@@ -103,23 +161,138 @@ function RebuttalCard({ title, argument, grounding }) {
       <div className="rebuttal-footer">
         <span>
           Citations:{" "}
-          {argument.cited_evidence_ids?.join(", ") ||
-            "None"}
+          {argument.cited_evidence_ids?.length
+            ? argument.cited_evidence_ids.join(", ")
+            : "None"}
         </span>
 
         {grounding && (
           <span>
             Grounding:{" "}
-            {Math.round(
-              grounding.grounding_score * 100
+            {formatPercent(
+              grounding.grounding_score
             )}
-            %
           </span>
         )}
       </div>
     </div>
   );
 }
+
+
+function EvidenceCard({ item }) {
+  return (
+    <article className="evidence-card">
+      <div className="evidence-id">
+        {item.evidence_id}
+      </div>
+
+      <div className="evidence-content">
+        <div className="evidence-top">
+          <SourceBadge
+            type={item.source_type}
+          />
+
+          {item.domain && (
+            <span className="domain">
+              {item.domain}
+            </span>
+          )}
+        </div>
+
+        <h3>
+          {item.title ||
+            "Evidence from local corpus"}
+        </h3>
+
+        <p>{item.text}</p>
+
+        <div className="evidence-metrics">
+          <span>
+            Retrieval{" "}
+            <strong>
+              {(
+                item.retrieval_score ??
+                item.score ??
+                0
+              ).toFixed(3)}
+            </strong>
+          </span>
+
+          {item.credibility_score !==
+            undefined && (
+            <span>
+              Credibility{" "}
+              <strong>
+                {formatPercent(
+                  item.credibility_score
+                )}
+              </strong>
+            </span>
+          )}
+
+          {item.published_date && (
+            <span>
+              Published{" "}
+              <strong>
+                {item.published_date}
+              </strong>
+            </span>
+          )}
+        </div>
+
+        {item.url && (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="source-link"
+          >
+            Open source ↗
+          </a>
+        )}
+      </div>
+    </article>
+  );
+}
+
+
+function RejectedEvidenceCard({ item }) {
+  return (
+    <article className="rejected-card">
+      <div className="rejected-id">
+        {item.evidence_id}
+      </div>
+
+      <div>
+        <div className="evidence-top">
+          <SourceBadge
+            type={item.source_type}
+          />
+
+          {item.domain && (
+            <span className="domain">
+              {item.domain}
+            </span>
+          )}
+        </div>
+
+        <h3>
+          {item.title ||
+            "Rejected evidence"}
+        </h3>
+
+        <p>{item.text}</p>
+
+        <div className="rejection-reason">
+          Source was excluded by the evidence
+          quality filter.
+        </div>
+      </div>
+    </article>
+  );
+}
+
 
 function App() {
   const [claim, setClaim] = useState(
@@ -161,14 +334,21 @@ function App() {
       );
 
       if (!response.ok) {
-        const message = await response.text();
+        const message =
+          await response.text();
 
         throw new Error(
-          message || "Backend request failed."
+          message ||
+            "Backend request failed."
         );
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       setResult(data);
     } catch (err) {
@@ -181,6 +361,7 @@ function App() {
     }
   }
 
+
   function handleKeyDown(event) {
     if (
       (event.ctrlKey || event.metaKey) &&
@@ -190,28 +371,52 @@ function App() {
     }
   }
 
+
+  const verdict =
+    result?.verdict?.verdict || "";
+
+  const isSubjective =
+    result?.claim_type === "SUBJECTIVE";
+
+  const isInsufficient =
+    result &&
+    result.evidence_sufficient === false &&
+    !isSubjective;
+
+
   return (
     <div className="app">
+
+      {/* =====================================================
+          HERO
+      ===================================================== */}
+
       <header className="hero">
         <div className="hero-badge">
-          MULTI-AGENT AI
+          MULTI-AGENT AI · V2
         </div>
 
         <h1>
-          Adversarial Fact
-          <span> Checker</span>
+          Open-World
+          <span>Fact Checker</span>
         </h1>
 
         <p>
-          Evidence retrieval, multi-agent debate and
-          structured judgment powered by FAISS,
-          LangGraph and Gemini.
+          Hybrid local and web retrieval,
+          evidence validation, adversarial debate,
+          and structured judgment.
         </p>
       </header>
 
+
       <main className="container">
-        {/* INPUT */}
+
+        {/* =================================================
+            INPUT
+        ================================================= */}
+
         <section className="panel input-panel">
+
           <div className="panel-header">
             <div>
               <span className="eyebrow">
@@ -226,6 +431,7 @@ function App() {
             </span>
           </div>
 
+
           <textarea
             value={claim}
             onChange={(e) =>
@@ -236,7 +442,9 @@ function App() {
             rows={4}
           />
 
+
           <div className="input-footer">
+
             <label className="toggle-label">
               <input
                 type="checkbox"
@@ -255,6 +463,7 @@ function App() {
               Enable rebuttal round
             </label>
 
+
             <button
               className="debate-button"
               onClick={runDebate}
@@ -263,161 +472,350 @@ function App() {
               {loading ? (
                 <>
                   <span className="spinner" />
-                  Running debate...
+                  Analyzing...
                 </>
               ) : (
                 <>
-                  Run Debate
+                  Run Analysis
                   <span>→</span>
                 </>
               )}
             </button>
+
           </div>
         </section>
 
-        {/* ERROR */}
+
+        {/* =================================================
+            ERROR
+        ================================================= */}
+
         {error && (
           <div className="error-box">
-            <strong>Request failed</strong>
+            <strong>
+              Request failed
+            </strong>
+
             <span>{error}</span>
           </div>
         )}
 
-        {/* RESULTS */}
+
+        {/* =================================================
+            RESULTS
+        ================================================= */}
+
         {result && (
           <>
-            {/* VERDICT */}
-            <section className="verdict-section">
+
+            {/* =============================================
+                CLAIM ANALYSIS
+            ============================================= */}
+
+            <section className="section-block">
+
               <div className="section-top">
                 <div>
                   <span className="eyebrow">
                     STEP 02
                   </span>
 
-                  <h2>Final verdict</h2>
+                  <h2>
+                    Claim analysis
+                  </h2>
                 </div>
-
-                <span className="pipeline-tag">
-                  LangGraph Pipeline
-                </span>
               </div>
 
-              <div className="verdict-card">
-                <div className="verdict-main">
-                  <span className="verdict-label">
-                    VERDICT
+
+              <div className="metadata-grid">
+
+                <div className="metadata-card">
+                  <span>
+                    CLAIM TYPE
                   </span>
 
-                  <div
-                    className={`verdict-value ${result.verdict?.verdict?.toLowerCase()}`}
-                  >
-                    {result.verdict?.verdict}
-                  </div>
+                  <strong>
+                    {result.claim_type ||
+                      "FACTUAL"}
+                  </strong>
+                </div>
+
+
+                <div className="metadata-card">
+                  <span>
+                    RETRIEVAL MODE
+                  </span>
+
+                  <strong>
+                    {result.retrieval_mode ||
+                      "LOCAL"}
+                  </strong>
+                </div>
+
+
+                <div className="metadata-card">
+                  <span>
+                    EVIDENCE
+                  </span>
+
+                  <strong>
+                    {result.evidence_sufficient
+                      ? "SUFFICIENT"
+                      : "INSUFFICIENT"}
+                  </strong>
+                </div>
+
+              </div>
+
+            </section>
+
+
+            {/* =============================================
+                EVIDENCE STATUS
+            ============================================= */}
+
+            {(isSubjective ||
+              isInsufficient) && (
+              <section
+                className={`decision-box ${
+                  isSubjective
+                    ? "subjective"
+                    : "insufficient"
+                }`}
+              >
+
+                <div className="decision-icon">
+                  {isSubjective
+                    ? "?"
+                    : "!"}
+                </div>
+
+                <div>
+                  <span className="eyebrow">
+                    SYSTEM DECISION
+                  </span>
+
+                  <h2>
+                    {isSubjective
+                      ? "Subjective claim"
+                      : "Insufficient evidence"}
+                  </h2>
 
                   <p>
-                    {result.verdict?.reasoning}
+                    {result.evidence_reason ||
+                      result.verdict?.reasoning}
                   </p>
                 </div>
 
-                <div className="confidence">
-                  <span>Confidence</span>
+              </section>
+            )}
 
-                  <strong>
-                    {Math.round(
-                      (result.verdict?.confidence ||
-                        0) * 100
-                    )}
-                    %
-                  </strong>
 
-                  <div className="confidence-track">
-                    <div
-                      style={{
-                        width: `${
-                          (result.verdict
-                            ?.confidence || 0) * 100
-                        }%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
+            {/* =============================================
+                VERDICT
+            ============================================= */}
 
-            {/* ARGUMENTS */}
-            <section className="section-block">
+            <section className="verdict-section">
+
               <div className="section-top">
                 <div>
                   <span className="eyebrow">
                     STEP 03
                   </span>
 
-                  <h2>Agent arguments</h2>
+                  <h2>
+                    Final verdict
+                  </h2>
+                </div>
+
+                <div className="header-badges">
+                  <StatusBadge
+                    value={
+                      result.claim_type
+                    }
+                  />
+
+                  <StatusBadge
+                    value={
+                      result.retrieval_mode
+                    }
+                  />
                 </div>
               </div>
 
-              <div className="arguments-grid">
-                <ArgumentCard
-                  title="FOR Agent"
-                  argument={result.for_argument}
-                  grounding={result.for_grounding}
-                />
 
-                <ArgumentCard
-                  title="AGAINST Agent"
-                  argument={result.against_argument}
-                  grounding={
-                    result.against_grounding
-                  }
-                />
-              </div>
-            </section>
+              <div className="verdict-card">
 
-            {/* SCORES */}
-            <section className="section-block">
-              <div className="section-top">
-                <div>
-                  <span className="eyebrow">
-                    STEP 04
+                <div className="verdict-main">
+
+                  <span className="verdict-label">
+                    VERDICT
                   </span>
 
-                  <h2>Debate scores</h2>
+                  <div
+                    className={`verdict-value ${verdict.toLowerCase()}`}
+                  >
+                    {verdict}
+                  </div>
+
+                  <p>
+                    {result.verdict?.reasoning}
+                  </p>
+
                 </div>
-              </div>
 
-              <div className="scores-panel">
-                <ScoreBar
-                  label="FOR"
-                  score={
-                    result.verdict?.for_score
-                  }
-                />
 
-                <ScoreBar
-                  label="AGAINST"
-                  score={
-                    result.verdict?.against_score
-                  }
-                />
+                <div className="confidence">
+
+                  <span>
+                    Confidence
+                  </span>
+
+                  <strong>
+                    {formatPercent(
+                      result.verdict
+                        ?.confidence
+                    )}
+                  </strong>
+
+                  <div className="confidence-track">
+                    <div
+                      style={{
+                        width: `${Math.round(
+                          (result.verdict
+                            ?.confidence ||
+                            0) * 100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+
+                </div>
+
               </div>
             </section>
 
-            {/* REBUTTALS */}
-            {rebuttalRound &&
+
+            {/* =============================================
+                DEBATE SCORES
+            ============================================= */}
+
+            {result.verdict?.for_score !==
+              undefined &&
+              result.verdict?.against_score !==
+                undefined && (
+                <section className="section-block">
+
+                  <div className="section-top">
+                    <div>
+                      <span className="eyebrow">
+                        SCORE
+                      </span>
+
+                      <h2>
+                        Debate balance
+                      </h2>
+                    </div>
+                  </div>
+
+                  <div className="scores-panel">
+
+                    <ScoreBar
+                      label="FOR"
+                      score={
+                        result.verdict
+                          .for_score
+                      }
+                    />
+
+                    <ScoreBar
+                      label="AGAINST"
+                      score={
+                        result.verdict
+                          .against_score
+                      }
+                    />
+
+                  </div>
+
+                </section>
+              )}
+
+
+            {/* =============================================
+                AGENTS
+            ============================================= */}
+
+            {!isSubjective &&
+              !isInsufficient && (
+                <section className="section-block">
+
+                  <div className="section-top">
+                    <div>
+                      <span className="eyebrow">
+                        STEP 04
+                      </span>
+
+                      <h2>
+                        Agent arguments
+                      </h2>
+                    </div>
+                  </div>
+
+
+                  <div className="arguments-grid">
+
+                    <ArgumentCard
+                      title="FOR Agent"
+                      argument={
+                        result.for_argument
+                      }
+                      grounding={
+                        result.for_grounding
+                      }
+                    />
+
+                    <ArgumentCard
+                      title="AGAINST Agent"
+                      argument={
+                        result.against_argument
+                      }
+                      grounding={
+                        result.against_grounding
+                      }
+                    />
+
+                  </div>
+
+                </section>
+              )}
+
+
+            {/* =============================================
+                REBUTTALS
+            ============================================= */}
+
+            {!isSubjective &&
+              !isInsufficient &&
               (result.for_rebuttal ||
                 result.against_rebuttal) && (
                 <section className="section-block">
+
                   <div className="section-top">
                     <div>
                       <span className="eyebrow">
                         STEP 05
                       </span>
 
-                      <h2>Rebuttal round</h2>
+                      <h2>
+                        Rebuttal round
+                      </h2>
                     </div>
                   </div>
 
+
                   <div className="rebuttal-grid">
+
                     <RebuttalCard
                       title="FOR → AGAINST"
                       argument={
@@ -437,64 +835,130 @@ function App() {
                         result.against_rebuttal_grounding
                       }
                     />
+
                   </div>
+
                 </section>
               )}
 
-            {/* EVIDENCE */}
+
+            {/* =============================================
+                VALIDATED EVIDENCE
+            ============================================= */}
+
             <section className="section-block">
+
               <div className="section-top">
+
                 <div>
                   <span className="eyebrow">
                     STEP 06
                   </span>
 
-                  <h2>Retrieved evidence</h2>
+                  <h2>
+                    Validated evidence
+                  </h2>
                 </div>
 
                 <span className="evidence-count">
-                  {result.evidence?.length || 0}{" "}
+                  {result.evidence?.length ||
+                    0}{" "}
                   sources
                 </span>
+
               </div>
 
-              <div className="evidence-list">
-                {result.evidence?.map((item) => (
-                  <article
-                    className="evidence-card"
-                    key={item.evidence_id}
-                  >
-                    <div className="evidence-id">
-                      {item.evidence_id}
-                    </div>
 
-                    <div className="evidence-content">
-                      <p>{item.text}</p>
+              {result.evidence?.length ? (
+                <div className="evidence-list">
 
-                      <div className="evidence-score">
-                        FAISS similarity
-                        <strong>
-                          {item.score?.toFixed(3)}
-                        </strong>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
+                  {result.evidence.map(
+                    (item) => (
+                      <EvidenceCard
+                        key={
+                          item.evidence_id
+                        }
+                        item={item}
+                      />
+                    )
+                  )}
+
+                </div>
+              ) : (
+                <div className="empty-state">
+                  No accepted evidence was
+                  available.
+                </div>
+              )}
+
             </section>
+
+
+            {/* =============================================
+                REJECTED EVIDENCE
+            ============================================= */}
+
+            {result.rejected_evidence
+              ?.length > 0 && (
+              <section className="section-block">
+
+                <div className="section-top">
+
+                  <div>
+                    <span className="eyebrow">
+                      FILTER
+                    </span>
+
+                    <h2>
+                      Rejected evidence
+                    </h2>
+                  </div>
+
+                  <span className="evidence-count">
+                    {
+                      result
+                        .rejected_evidence
+                        .length
+                    }{" "}
+                    filtered
+                  </span>
+
+                </div>
+
+
+                <div className="rejected-list">
+
+                  {result.rejected_evidence.map(
+                    (item) => (
+                      <RejectedEvidenceCard
+                        key={
+                          item.evidence_id
+                        }
+                        item={item}
+                      />
+                    )
+                  )}
+
+                </div>
+
+              </section>
+            )}
+
           </>
         )}
       </main>
 
+
       <footer>
         <span>
-          Multi-Agent Fact-Checking System
+          Multi-Agent Open-World Fact Checker
         </span>
 
         <span>
-          FAISS · LangGraph · FastAPI · React
+          FAISS · Tavily · LangGraph · FastAPI · React
         </span>
       </footer>
+
     </div>
   );
 }

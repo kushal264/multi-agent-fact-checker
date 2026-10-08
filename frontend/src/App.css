@@ -29,6 +29,10 @@ button {
   cursor: pointer;
 }
 
+a {
+  color: inherit;
+}
+
 .app {
   min-height: 100vh;
 }
@@ -49,8 +53,8 @@ button {
   padding: 7px 12px;
   border: 1px solid #cfcac0;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   letter-spacing: 0.14em;
   margin-bottom: 20px;
 }
@@ -68,7 +72,7 @@ button {
 }
 
 .hero p {
-  max-width: 650px;
+  max-width: 690px;
   margin: 24px auto 0;
   color: #777169;
   line-height: 1.7;
@@ -96,14 +100,17 @@ button {
 .argument-card,
 .scores-panel,
 .rebuttal-card,
-.evidence-card {
+.evidence-card,
+.rejected-card,
+.metadata-card,
+.decision-box {
   border: 1px solid #dcd9d1;
   background: #fbfaf7;
   border-radius: 18px;
 }
 
 /* =========================================================
-   SECTION HEADERS
+   HEADERS
 ========================================================= */
 
 .panel-header,
@@ -113,6 +120,12 @@ button {
   align-items: flex-end;
   gap: 20px;
   margin-bottom: 18px;
+}
+
+.header-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .eyebrow {
@@ -130,8 +143,11 @@ h2 {
   letter-spacing: -0.03em;
 }
 
+h3 {
+  margin-top: 0;
+}
+
 .shortcut,
-.pipeline-tag,
 .evidence-count {
   font-size: 11px;
   color: #817a71;
@@ -164,7 +180,8 @@ textarea {
 
 textarea:focus {
   border-color: #7d776e;
-  box-shadow: 0 0 0 3px rgba(70, 66, 60, 0.07);
+  box-shadow:
+    0 0 0 3px rgba(70, 66, 60, 0.07);
 }
 
 .input-footer {
@@ -278,6 +295,114 @@ textarea:focus {
 }
 
 /* =========================================================
+   METADATA
+========================================================= */
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.metadata-card {
+  padding: 19px 20px;
+}
+
+.metadata-card span {
+  display: block;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #8b847a;
+  margin-bottom: 8px;
+}
+
+.metadata-card strong {
+  font-size: 18px;
+  text-transform: uppercase;
+}
+
+/* =========================================================
+   STATUS
+========================================================= */
+
+.status-badge,
+.source-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.status-badge {
+  background: #ece9e2;
+  border: 1px solid #d9d5cc;
+}
+
+.source-badge.local {
+  background: #ece9e2;
+}
+
+.source-badge.web {
+  background: #e8eee9;
+}
+
+.domain {
+  color: #888078;
+  font-size: 11px;
+}
+
+/* =========================================================
+   DECISION BOX
+========================================================= */
+
+.decision-box {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  padding: 22px;
+  margin-bottom: 34px;
+}
+
+.decision-box.subjective {
+  border-color: #c7b993;
+  background: #f6f2e7;
+}
+
+.decision-box.insufficient {
+  border-color: #cfb4b4;
+  background: #faf0f0;
+}
+
+.decision-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #e8e3d8;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.decision-box h2 {
+  margin-bottom: 7px;
+}
+
+.decision-box p {
+  margin: 0;
+  color: #6d675f;
+  line-height: 1.65;
+}
+
+/* =========================================================
    VERDICT
 ========================================================= */
 
@@ -315,6 +440,10 @@ textarea:focus {
 
 .verdict-value.uncertain {
   color: #8a6b2c;
+}
+
+.verdict-value.subjective {
+  color: #65517d;
 }
 
 .verdict-main p {
@@ -433,7 +562,8 @@ textarea:focus {
 
 .grounding-box {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: 20px;
   padding-top: 18px;
@@ -493,6 +623,13 @@ textarea:focus {
   padding: 23px;
 }
 
+.rebuttal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
 .rebuttal-title {
   display: inline-block;
   font-size: 10px;
@@ -524,7 +661,8 @@ textarea:focus {
    EVIDENCE
 ========================================================= */
 
-.evidence-list {
+.evidence-list,
+.rejected-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -550,27 +688,99 @@ textarea:focus {
   padding: 18px 20px;
 }
 
-.evidence-content p {
+.evidence-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.evidence-content h3,
+.rejected-card h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.evidence-content p,
+.rejected-card p {
   margin: 0;
   color: #5f5a53;
   font-size: 14px;
   line-height: 1.65;
 }
 
-.evidence-score {
+.evidence-metrics {
   display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 10px;
-  color: #928b82;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 13px;
+  color: #8c857c;
   font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
 }
 
-.evidence-score strong {
-  color: #363330;
+.evidence-metrics strong {
+  color: #33302d;
+  margin-left: 4px;
+}
+
+.source-link {
+  display: inline-flex;
+  margin-top: 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.source-link:hover {
+  text-decoration: underline;
+}
+
+/* =========================================================
+   REJECTED EVIDENCE
+========================================================= */
+
+.rejected-card {
+  display: grid;
+  grid-template-columns: 75px 1fr;
+  overflow: hidden;
+  background: #f9f3f1;
+  border-color: #dfccc7;
+}
+
+.rejected-id {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f1e4e0;
+  border-right: 1px solid #dfccc7;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.rejected-card > div:last-child {
+  padding: 18px 20px;
+}
+
+.rejection-reason {
+  margin-top: 12px;
+  color: #98766f;
   font-size: 11px;
+}
+
+/* =========================================================
+   EMPTY STATE
+========================================================= */
+
+.empty-state {
+  border: 1px dashed #d1cdc4;
+  border-radius: 16px;
+  padding: 30px;
+  text-align: center;
+  color: #8d867d;
+  background: #faf9f6;
 }
 
 /* =========================================================
@@ -619,6 +829,7 @@ footer {
     justify-content: center;
   }
 
+  .metadata-grid,
   .verdict-card,
   .arguments-grid,
   .rebuttal-grid {
@@ -628,10 +839,6 @@ footer {
   .confidence {
     border-left: 0;
     border-top: 1px solid #dedbd2;
-  }
-
-  .grounding-box {
-    grid-template-columns: 1fr 1fr 1fr;
   }
 
   footer {
@@ -644,7 +851,8 @@ footer {
   .argument-card,
   .rebuttal-card,
   .verdict-main,
-  .confidence {
+  .confidence,
+  .metadata-card {
     padding: 18px;
   }
 
@@ -652,7 +860,8 @@ footer {
     grid-template-columns: 1fr;
   }
 
-  .evidence-card {
+  .evidence-card,
+  .rejected-card {
     grid-template-columns: 55px 1fr;
   }
 }

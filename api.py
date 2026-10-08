@@ -1,7 +1,9 @@
 """
 api.py
 ======
-FastAPI backend for the Multi-Agent Fact-Checking Debate System.
+
+FastAPI backend for the V2 hybrid/open-world
+multi-agent fact-checking system.
 
 Architecture:
 
@@ -11,16 +13,21 @@ FastAPI
   ↓
 LangGraph
   ↓
-FAISS + Multi-Agent Debate
+Claim Classifier
+  ↓
+Hybrid Retriever
+  ├── FAISS
+  └── Web Search
+  ↓
+Evidence Validator
+  ↓
+Multi-Agent Debate
   ↓
 Verdict
 
 Run:
-    uvicorn api:app --reload
 
-Endpoints:
-    GET  /health
-    POST /debate
+    uvicorn api:app --reload
 """
 
 import json
@@ -31,26 +38,32 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from debate_agents.retriever import FaissRetriever
-from debate_agents.llm import DummyLLM, GeminiLLM
-from debate_agents.graph import build_debate_graph
+from debate_agents.web_retriever import WebRetriever
+from debate_agents.hybrid_retriever import HybridRetriever
+
+from debate_agents.llm import (
+    DummyLLM,
+    GeminiLLM,
+)
+
+from debate_agents.graph import (
+    build_debate_graph,
+)
 
 
 # ============================================================
-# FASTAPI APP
+# FASTAPI
 # ============================================================
 
 app = FastAPI(
-    title="Multi-Agent Fact-Checking Debate System",
-    version="1.0.0",
+    title="Multi-Agent Open-World Fact Checker",
+    version="2.0.0",
 )
 
 
 # ============================================================
 # CORS
 # ============================================================
-
-# React development server normally runs on port 5173.
-# FastAPI normally runs on port 8000.
 
 app.add_middleware(
     CORSMiddleware,
@@ -65,7 +78,7 @@ app.add_middleware(
 
 
 # ============================================================
-# LOAD EVIDENCE CORPUS
+# LOAD LOCAL EVIDENCE CORPUS
 # ============================================================
 
 with open(
@@ -77,30 +90,74 @@ with open(
 
 
 # ============================================================
-# BUILD FAISS RETRIEVER ONCE
+# LOCAL FAISS RETRIEVER
 # ============================================================
 
-_retriever = FaissRetriever(_corpus)
+_local_retriever = FaissRetriever(
+    _corpus
+)
 
 
 # ============================================================
-# SELECT LLM BACKEND
+# WEB RETRIEVER
+# ============================================================
+
+_web_retriever = WebRetriever(
+    max_results=5,
+    include_raw_content=True,
+)
+
+
+# ============================================================
+# HYBRID RETRIEVER
+# ============================================================
+
+_hybrid_retriever = HybridRetriever(
+    local_retriever=_local_retriever,
+    web_retriever=_web_retriever,
+
+    local_k=4,
+    web_k=5,
+
+    # Starting threshold.
+    # We can calibrate this later.
+    local_threshold=0.55,
+)
+
+
+# ============================================================
+# LLM BACKEND
 # ============================================================
 
 if os.environ.get("GEMINI_API_KEY"):
+
     _llm = GeminiLLM()
+
 else:
+
     _llm = DummyLLM()
 
 
 # ============================================================
-# BUILD LANGGRAPH ONCE
+# BUILD LANGGRAPH INSTANCES
 # ============================================================
 
-_debate_graph = build_debate_graph(
-    retriever=_retriever,
+# Build once instead of rebuilding the graph
+# for every request.
+
+_graph_with_rebuttal = build_debate_graph(
+    retriever=_hybrid_retriever,
     llm=_llm,
+    k_evidence=6,
     rebuttal_round=True,
+)
+
+
+_graph_without_rebuttal = build_debate_graph(
+    retriever=_hybrid_retriever,
+    llm=_llm,
+    k_evidence=6,
+    rebuttal_round=False,
 )
 
 
@@ -109,21 +166,37 @@ _debate_graph = build_debate_graph(
 # ============================================================
 
 class ClaimRequest(BaseModel):
+
     claim: str
+
     rebuttal_round: bool = True
 
 
 # ============================================================
-# HEALTH CHECK
+# HEALTH
 # ============================================================
 
 @app.get("/health")
 def health():
+
     return {
         "status": "ok",
-        "llm_backend": type(_llm).__name__,
-        "retriever": "FAISS",
+
+        "version": "2.0.0",
+
+        "llm_backend": type(
+            _llm
+        ).__name__,
+
+        "local_retriever": "FAISS",
+
+        "web_retriever": "Tavily",
+
+        "retriever": "Hybrid",
+
         "orchestration": "LangGraph",
+
+        "mode": "open-world",
     }
 
 
@@ -134,62 +207,118 @@ def health():
 @app.post("/debate")
 def debate(req: ClaimRequest):
 
-    # Build a graph for the requested rebuttal configuration.
-    #
-    # For normal frontend use, rebuttal_round=True is recommended.
-    graph = build_debate_graph(
-        retriever=_retriever,
-        llm=_llm,
-        rebuttal_round=req.rebuttal_round,
-    )
+    claim = req.claim.strip()
 
-    # Execute LangGraph.
-    result = graph.invoke(
+    if not claim:
+
+        return {
+            "error": "Claim cannot be empty."
+        }
+
+    # --------------------------------------------------------
+    # Select graph
+    # --------------------------------------------------------
+
+    if req.rebuttal_round:
+
+        graph = _graph_with_rebuttal
+
+    else:
+
+        graph = _graph_without_rebuttal
+
+    # --------------------------------------------------------
+    # Execute LangGraph
+    # --------------------------------------------------------
+
+    state = graph.invoke(
         {
-            "claim": req.claim,
+            "claim": claim,
         }
     )
 
-    debate_result = result["result"]
+    result = state["result"]
+
+    # --------------------------------------------------------
+    # Serialize evidence
+    # --------------------------------------------------------
+
+    evidence = [
+        item.__dict__
+        for item in result.evidence
+    ]
+
+    rejected_evidence = [
+        item.__dict__
+        for item in result.rejected_evidence
+    ]
+
+    # --------------------------------------------------------
+    # Return complete V2 response
+    # --------------------------------------------------------
 
     return {
+
         # ----------------------------------------------------
         # Claim
         # ----------------------------------------------------
 
-        "claim": debate_result.claim,
+        "claim": result.claim,
+
+        "claim_type": result.claim_type,
 
         # ----------------------------------------------------
-        # Retrieved evidence
+        # Retrieval
         # ----------------------------------------------------
 
-        "evidence": [
-            evidence.__dict__
-            for evidence in debate_result.evidence
-        ],
+        "retrieval_mode": (
+            result.retrieval_mode
+        ),
+
+        "evidence_sufficient": (
+            result.evidence_sufficient
+        ),
+
+        "evidence_reason": (
+            result.evidence_reason
+        ),
+
+        # ----------------------------------------------------
+        # Accepted evidence
+        # ----------------------------------------------------
+
+        "evidence": evidence,
+
+        # ----------------------------------------------------
+        # Rejected evidence
+        # ----------------------------------------------------
+
+        "rejected_evidence": (
+            rejected_evidence
+        ),
 
         # ----------------------------------------------------
         # Opening arguments
         # ----------------------------------------------------
 
         "for_argument": (
-            debate_result.for_argument.__dict__
+            result.for_argument.__dict__
         ),
 
         "against_argument": (
-            debate_result.against_argument.__dict__
+            result.against_argument.__dict__
         ),
 
         # ----------------------------------------------------
-        # Opening grounding
+        # Grounding
         # ----------------------------------------------------
 
         "for_grounding": (
-            debate_result.for_grounding.__dict__
+            result.for_grounding.__dict__
         ),
 
         "against_grounding": (
-            debate_result.against_grounding.__dict__
+            result.against_grounding.__dict__
         ),
 
         # ----------------------------------------------------
@@ -197,14 +326,14 @@ def debate(req: ClaimRequest):
         # ----------------------------------------------------
 
         "for_rebuttal": (
-            debate_result.for_rebuttal.__dict__
-            if debate_result.for_rebuttal
+            result.for_rebuttal.__dict__
+            if result.for_rebuttal
             else None
         ),
 
         "against_rebuttal": (
-            debate_result.against_rebuttal.__dict__
-            if debate_result.against_rebuttal
+            result.against_rebuttal.__dict__
+            if result.against_rebuttal
             else None
         ),
 
@@ -213,22 +342,22 @@ def debate(req: ClaimRequest):
         # ----------------------------------------------------
 
         "for_rebuttal_grounding": (
-            debate_result.for_rebuttal_grounding.__dict__
-            if debate_result.for_rebuttal_grounding
+            result.for_rebuttal_grounding.__dict__
+            if result.for_rebuttal_grounding
             else None
         ),
 
         "against_rebuttal_grounding": (
-            debate_result.against_rebuttal_grounding.__dict__
-            if debate_result.against_rebuttal_grounding
+            result.against_rebuttal_grounding.__dict__
+            if result.against_rebuttal_grounding
             else None
         ),
 
         # ----------------------------------------------------
-        # Final verdict
+        # Verdict
         # ----------------------------------------------------
 
         "verdict": (
-            debate_result.verdict.__dict__
+            result.verdict.__dict__
         ),
     }
